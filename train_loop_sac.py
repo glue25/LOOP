@@ -256,7 +256,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="LOOP_SAC_ARC")
     parser.add_argument("--env", default="MBRLHalfCheetah-v0")
-    parser.add_argument("--seed", default=0, type=int)
+    parser.add_argument("--seed", default=1, type=int)
     parser.add_argument("--start_timesteps", default=1e3, type=int)
     parser.add_argument("--eval_freq", default=2e3, type=int)
     parser.add_argument("--max_timesteps", default=1e6, type=int)
