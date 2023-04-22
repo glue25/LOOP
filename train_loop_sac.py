@@ -1,8 +1,13 @@
 # Implements LOOP: ARC with H-step lookahead policies for Online RL
+import sys, os
+project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_dir)
 import numpy as np
+from tensorboardX import SummaryWriter
 import torch
 import gym
 import argparse
+# import wandb
 import os
 import time
 import sac
@@ -136,6 +141,7 @@ def run_loop(args):
     evaluation_episodes = 0
     success_score=0
     state, done, done_episode = env.reset(), False, False
+    evaluate_count = 0
 
     for t in range(int(args.max_timesteps)):
         total_timesteps += 1
@@ -211,10 +217,12 @@ def run_loop(args):
             if args.policy in lookahead_policies:
                 if(config['sac_config']['evaluation_mode']=='actor') :
                     actor_rew = eval_policy_actor(sac_policy, args.env, args.seed+np.random.randint(0,5))
+                    writer.add_scalar('policy_reward/episode', actor_rew, evaluate_count)
                     logger.store(ActorEvaluation=actor_rew)
             
             if noise_amount!=0 or 'ARC' in args.policy:
                 test_mpc_eval,_ = eval_policy(policy, args.env,args.seed+np.random.randint(0,5),eval_episodes=2,logger=logger) 
+                writer.add_scalar('mpc_reward/episode', test_mpc_eval, evaluate_count) 
                 logger.store(TestMPCEvaluation=test_mpc_eval)
 
             evaluation_rewards, evaluation_episodes, evaluation_costs = 0, 0, 0
@@ -239,7 +247,8 @@ def run_loop(args):
             logger.log_tabular('DynamicsValLoss', average_only=True)
             logger.log_tabular('Time', time.time()-start_time)
             logger.dump_tabular()
-
+            
+            evaluate_count +=1
 
 
 
@@ -253,6 +262,8 @@ if __name__=='__main__':
     parser.add_argument("--max_timesteps", default=1e6, type=int)
     parser.add_argument("--dynamics_freq", default=250, type=int)
     parser.add_argument("--exp_name", default="dump")
+    parser.add_argument("--logdir", type = str, default = "logs/MBRLHalfCheetah-v0/loop/")
     parser.add_argument('--config', '-c', type=str, default='configs/config.yml', help="specify the path to the configuation file of the models")
     args = parser.parse_args()
+    writer = SummaryWriter(os.path.join(args.logdir, 'log'))
     run_loop(args)
